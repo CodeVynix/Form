@@ -1,0 +1,30 @@
+{
+	"name": "form-ai-agent",
+	"displayName": "Form AI Agent",
+	"description": "Bring-your-own-key and local-model assistant for Form IDE.",
+	"version": "0.1.0",
+	"publisher": "codevynix",
+	"license": "MIT",
+	"engines": { "vscode": "^1.108.0" },
+	"categories": ["AI"],
+	"main": "./out/extension.js",
+	"activationEvents": ["onView:formAiAgent.chat", "onCommand:formAiAgent.configureProvider"],
+	"contributes": {
+		"commands": [
+			{ "command": "formAiAgent.configureProvider", "title": "Form AI Agent: Configure Provider" },
+			{ "command": "formAiAgent.clearApiKey", "title": "Form AI Agent: Clear Saved API Key" }
+		],
+		"viewsContainers": { "activitybar": [{ "id": "form-ai-agent", "title": "Form AI", "icon": "resources/form.svg" }] },
+		"views": { "form-ai-agent": [{ "id": "formAiAgent.chat", "name": "Form AI Agent", "type": "webview" }] },
+		"configuration": {
+			"title": "Form AI Agent",
+			"properties": {
+				"formAiAgent.provider": { "type": "string", "default": "openai", "enum": ["anthropic", "openai", "google", "deepseek", "nvidia", "openrouter", "ollama", "llamacpp", "lmstudio", "custom"], "description": "The active AI provider." },
+				"formAiAgent.model": { "type": "string", "default": "gpt-4.1-mini", "description": "Model identifier sent to the provider." },
+				"formAiAgent.customEndpoint": { "type": "string", "default": "", "description": "Base URL for a custom OpenAI-compatible server." }
+			}
+		}
+	},
+	"scripts": { "compile": "tsc -p .", "watch": "tsc -watch -p ." },
+	"devDependencies": { "@types/node": "24.x", "@types/vscode": "^1.108.0", "typescript": "^5.9.0" }
+}
