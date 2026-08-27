@@ -26,7 +26,12 @@ export function createLauncherWindow(): BrowserWindow {
     icon: path.join(__dirname, '..', 'resources', 'icons', 'form.ico'),
   });
 
-  launcherWindow.loadFile(path.join(__dirname, '..', 'src', 'launcher', 'launcher.html'));
+  // Assets are mirrored by scripts/copy-assets.js: src/**/*.html -> out/**/*.html
+  // In dev, __dirname is out/ ; in packaged app, same. Try out/launcher/launcher.html first, fallback to src/ for bare tsc without copy.
+  const outHtml = path.join(__dirname, 'launcher', 'launcher.html');
+  const srcHtml = path.join(__dirname, '..', 'src', 'launcher', 'launcher.html');
+  const htmlToLoad = require('fs').existsSync(outHtml) ? outHtml : srcHtml;
+  launcherWindow.loadFile(htmlToLoad);
   launcherWindow.on('closed', () => { launcherWindow = undefined; });
   return launcherWindow;
 }

@@ -14,14 +14,16 @@
   },
   "packageManager": "yarn@1.22.22",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.js",
+    "build:tsc": "tsc -p tsconfig.json",
+    "copy:assets": "node scripts/copy-assets.js",
     "watch": "tsc -watch -p tsconfig.json",
     "lint": "eslint src --ext .ts",
     "fetch:vscode": "node scripts/fetch-vscode.js",
     "sync:product": "node scripts/sync-product.js",
     "vscode:build": "yarn gulp vscode --target win32-x64 --build.target unbranded",
     "electron:start": "electron ./out/main.js",
-    "dev": "yarn build && yarn electron:start",
+    "dev": "npm run build && npm run electron:start",
     "package:win": "electron-builder --win --x64",
     "postinstall": "electron-builder install-app-deps"
   },
@@ -66,6 +68,13 @@
       "form/**/*",
       "resources/**/*",
       "node_modules/**/*"
+    ],
+    "extraFiles": [
+      {
+        "from": "out",
+        "to": "out",
+        "filter": ["**/*.html", "**/*.css", "**/*.svg", "**/*.png", "**/*.jpg", "**/*.jpeg", "**/*.gif", "**/*.ico", "**/*.woff", "**/*.woff2", "**/*.ttf", "**/*.eot", "**/*.webp"]
+      }
     ],
     "extraResources": [
       {

@@ -33,13 +33,12 @@ function createWorkspaceWindow(folder: string): BrowserWindow {
     icon: path.join(__dirname, '..', 'resources', 'icons', 'form.ico'), // WIN32-SPECIFIC
   });
 
-  // In the full Code-OSS build this would load workbench.html. For the overlay scaffold
-  // we load a minimal workspace shell that embeds the agent panel.
-  const workspaceHtml = path.join(__dirname, '..', 'src', 'workbench', 'workspace.html');
-  const fallbackHtml = path.join(__dirname, 'workbench', 'workspace.html');
-  const htmlToLoad = fs.existsSync(workspaceHtml) ? workspaceHtml : fallbackHtml;
-  // If neither exists (packaged), load from out/workbench
-  if (fs.existsSync(htmlToLoad)) {
+  // Workspace shell — mirrored by scripts/copy-assets.js: src/workbench/workspace.html -> out/workbench/workspace.html
+  // Prefer out/ asset (works in dev and packaged app); fallback to src/ for bare builds.
+  const outHtml = path.join(__dirname, 'workbench', 'workspace.html');
+  const srcHtml = path.join(__dirname, '..', 'src', 'workbench', 'workspace.html');
+  const htmlToLoad = fs.existsSync(outHtml) ? outHtml : fs.existsSync(srcHtml) ? srcHtml : undefined;
+  if (htmlToLoad) {
     workspaceWindow.loadFile(htmlToLoad, { query: { folder } });
   } else {
     workspaceWindow.loadURL(`data:text/html,<h1 style="font-family:sans-serif;padding:40px">Workspace: ${folder}</h1>`);
