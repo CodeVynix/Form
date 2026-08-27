@@ -19,6 +19,11 @@ export const IPC = {
   agentSetActiveModel: 'agent:setActiveModel',
   agentGetActiveModel: 'agent:getActiveModel',
 
+  // Workspace — real file tree / editor (interim minimal, before full Code-OSS build)
+  workspaceListFiles: 'workspace:listFiles',
+  workspaceReadFile: 'workspace:readFile',
+  workspaceSaveFile: 'workspace:saveFile',
+
   // Secure storage
   secureStoreKey: 'secure:storeKey',
   secureGetKey: 'secure:getKey',

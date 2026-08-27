@@ -41,6 +41,30 @@ function resolveOpencodeBin(): string {
   }
 }
 
+export class OpencodeNotFoundError extends Error {
+  code = 'OPENCODE_NOT_FOUND';
+  constructor() {
+    super('OpenCode backend not found — install it from https://opencode.ai, then restart Form');
+    this.name = 'OpencodeNotFoundError';
+  }
+}
+
+async function checkOpencodeAvailable(bin: string): Promise<void> {
+  if (bin !== 'opencode') return; // bundled exists
+  // Explicit PATH check: `where opencode` (Win32) / `which opencode` (POSIX)
+  // Avoid letting spawn throw uncaught ENOENT
+  const { spawnSync } = await import('child_process');
+  const cmd = process.platform === 'win32' ? 'where' : 'which';
+  try {
+    const res = spawnSync(cmd, [bin], { windowsHide: true, timeout: 3000 });
+    if (res.status !== 0) throw new OpencodeNotFoundError();
+  } catch (e) {
+    if (e instanceof OpencodeNotFoundError) throw e;
+    // spawnSync itself failed (e.g. ENOENT for where/which) — treat as not found
+    throw new OpencodeNotFoundError();
+  }
+}
+
 async function waitForHealth(url: string, timeoutMs = 15000): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -55,20 +79,45 @@ async function waitForHealth(url: string, timeoutMs = 15000): Promise<void> {
 
 export async function ensureOpencodeServer(workspaceFolder: string): Promise<OpencodeHandle> {
   const existing = handles.get(workspaceFolder);
-  if (existing && !existing.proc.killed) return existing;
+  if (existing && existing.proc && !existing.proc.killed && (existing.proc.exitCode === null || existing.proc.exitCode === undefined)) return existing;
 
   const port = await findFreePort();
   const url = `http://127.0.0.1:${port}`;
   const bin = resolveOpencodeBin();
 
-  // opencode serve --port <port> --dir <workspace>
-  // If `opencode` is not installed, this will fail gracefully and the webview shows "local server unreachable".
-  const proc = spawn(bin, ['serve', '--port', String(port), '--dir', workspaceFolder], {
-    cwd: workspaceFolder,
-    env: { ...process.env },
-    windowsHide: true,
-    stdio: ['ignore', 'pipe', 'pipe'],
+  // Guard: check PATH before spawning so we don't throw uncaught ENOENT
+  await checkOpencodeAvailable(bin);
+
+  // Wrap spawn in promise that rejects on 'error' (ENOENT etc.) instead of throwing synchronously
+  let proc: ChildProcess;
+  try {
+    proc = spawn(bin, ['serve', '--port', String(port), '--dir', workspaceFolder], {
+      cwd: workspaceFolder,
+      env: { ...process.env },
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  } catch (e: any) {
+    if (e?.code === 'ENOENT') throw new OpencodeNotFoundError();
+    throw e;
+  }
+
+  // Handle async spawn errors (e.g. ENOENT after spawn)
+  const spawnError = await new Promise<Error | null>((resolve) => {
+    let settled = false;
+    proc.on('error', (err: any) => {
+      if (settled) return;
+      settled = true;
+      if (err?.code === 'ENOENT') resolve(new OpencodeNotFoundError());
+      else resolve(err);
+    });
+    // Give spawn a tick to surface error, otherwise resolve null (no error)
+    setTimeout(() => { if (!settled) { settled = true; resolve(null); } }, 80);
   });
+  if (spawnError) {
+    try { proc.kill(); } catch {}
+    throw spawnError;
+  }
 
   proc.stdout?.on('data', (d) => console.log(`[opencode:${port}] ${d}`));
   proc.stderr?.on('data', (d) => console.warn(`[opencode:${port}] ${d}`));
@@ -76,18 +125,23 @@ export async function ensureOpencodeServer(workspaceFolder: string): Promise<Ope
     console.warn(`[opencode:${port}] exited with ${code}`);
     handles.delete(workspaceFolder);
   });
+  proc.on('error', (err) => {
+    console.warn(`[opencode:${port}] spawn error`, err);
+    handles.delete(workspaceFolder);
+  });
 
-  handles.set(workspaceFolder, { url, port, proc });
+  handles.set(workspaceFolder, { url, port, proc: proc! });
 
   try {
     await waitForHealth(url);
   } catch (e) {
     // Don't leak the process if health check fails.
-    try { proc.kill(); } catch {}
+    try { proc!.kill(); } catch {}
     handles.delete(workspaceFolder);
+    // Surface as not-found if health never came up and binary was missing
     throw e;
   }
-  return { url, port, proc };
+  return { url, port, proc: proc! };
 }
 
 export function getOpencodeHandle(workspaceFolder: string): OpencodeHandle | undefined {

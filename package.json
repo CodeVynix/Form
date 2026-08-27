@@ -27,15 +27,17 @@
     "package:win": "electron-builder --win --x64",
     "postinstall": "electron-builder install-app-deps"
   },
-  "dependencies": {},
+  "dependencies": {
+    "monaco-editor": "^0.52.2"
+  },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
     "electron": "^30.0.0",
     "electron-builder": "^24.9.0",
-    "typescript": "^5.4.0",
     "eslint": "^8.57.0",
-    "@typescript-eslint/eslint-plugin": "^7.0.0",
-    "@typescript-eslint/parser": "^7.0.0"
+    "typescript": "^5.4.0"
   },
   "build": {
     "appId": "ai.form.ide",
@@ -48,11 +50,15 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "resources/icons/form.ico"
@@ -73,7 +79,21 @@
       {
         "from": "out",
         "to": "out",
-        "filter": ["**/*.html", "**/*.css", "**/*.svg", "**/*.png", "**/*.jpg", "**/*.jpeg", "**/*.gif", "**/*.ico", "**/*.woff", "**/*.woff2", "**/*.ttf", "**/*.eot", "**/*.webp"]
+        "filter": [
+          "**/*.html",
+          "**/*.css",
+          "**/*.svg",
+          "**/*.png",
+          "**/*.jpg",
+          "**/*.jpeg",
+          "**/*.gif",
+          "**/*.ico",
+          "**/*.woff",
+          "**/*.woff2",
+          "**/*.ttf",
+          "**/*.eot",
+          "**/*.webp"
+        ]
       }
     ],
     "extraResources": [
@@ -85,6 +105,8 @@
   },
   "opencode": {
     "version": ">=0.1.0",
-    "serveArgs": ["serve"]
+    "serveArgs": [
+      "serve"
+    ]
   }
 }

@@ -109,6 +109,42 @@ function registerAgentIpc(): void {
 
   ipcMain.handle('gallery:check', async () => checkGalleryConfig());
 
+  // Workspace — minimal fs-backed explorer/editor (interim before full Code-OSS build)
+  ipcMain.handle(IPC.workspaceListFiles, async (_e, dir: string) => {
+    try {
+      const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+      // Sort dirs first then files, alphabetical
+      entries.sort((a, b) => {
+        if (a.isDirectory() !== b.isDirectory()) return a.isDirectory() ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+      return entries
+        .filter(d => d.name !== '.git' || true) // keep .git visible but could filter; keep for now
+        .map(d => ({ name: d.name, path: path.join(dir, d.name), isDirectory: d.isDirectory(), isFile: d.isFile() }));
+    } catch (e: any) {
+      return { error: e.message };
+    }
+  });
+  ipcMain.handle(IPC.workspaceReadFile, async (_e, p: string) => {
+    try {
+      // Limit to 2MB to avoid loading huge binaries
+      const stat = await fs.promises.stat(p);
+      if (stat.size > 2 * 1024 * 1024) return { error: 'File too large (>2MB)' };
+      const content = await fs.promises.readFile(p, 'utf8');
+      return { content };
+    } catch (e: any) {
+      return { error: e.message };
+    }
+  });
+  ipcMain.handle(IPC.workspaceSaveFile, async (_e, p: string, content: string) => {
+    try {
+      await fs.promises.writeFile(p, content, 'utf8');
+      return { ok: true };
+    } catch (e: any) {
+      return { error: e.message };
+    }
+  });
+
   ipcMain.handle(IPC.secureStoreKey, async (_e, keyId: string, value: string) => { storeKey(keyId, value); });
   ipcMain.handle(IPC.secureGetKey, async (_e, keyId: string) => getKey(keyId));
 }

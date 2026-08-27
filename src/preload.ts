@@ -24,6 +24,11 @@ contextBridge.exposeInMainWorld('form', {
   setActiveModel: (providerId: string, model: string) => ipcRenderer.invoke(IPC.agentSetActiveModel, providerId, model),
   getActiveModel: () => ipcRenderer.invoke(IPC.agentGetActiveModel),
 
+  // Workspace — real fs
+  listFiles: (dir: string) => ipcRenderer.invoke(IPC.workspaceListFiles, dir),
+  readFile: (p: string) => ipcRenderer.invoke(IPC.workspaceReadFile, p),
+  saveFile: (p: string, content: string) => ipcRenderer.invoke(IPC.workspaceSaveFile, p, content),
+
   // Gallery health (for tests)
   checkGallery: () => ipcRenderer.invoke('gallery:check'),
 });

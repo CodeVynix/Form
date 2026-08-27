@@ -7,10 +7,34 @@
   :root{--bg:#0e0e0e;--panel:#181818;--panel-2:#1e1e1e;--border:#242424;--border-2:#2a2a2a;--accent:#007acc;--text:#d4d4d4;--muted:#8a8a8a;--muted-2:#5e5e5e}
   *{box-sizing:border-box;margin:0}
   body{display:flex;height:100vh;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
-  #explorer{width:240px;background:var(--panel);border-right:1px solid var(--border);padding:10px 8px;overflow:auto}
-  #explorer h3{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px}
-  #editor{flex:1;background:#121212;padding:14px;overflow:auto;display:flex;flex-direction:column;gap:10px}
-  #explorer #workspaceLabel{color:var(--text);font-weight:600;font-size:12px}
+  #explorer{width:260px;min-width:180px;max-width:420px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+  #explorerHeader{padding:10px 10px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+  #explorerHeader h3{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);flex:1}
+  #refreshBtn{width:22px;height:22px;border-radius:5px;border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;font-size:12px}
+  #refreshBtn:hover{background:var(--panel-2);border-color:var(--border);color:var(--text)}
+  #fileTree{flex:1;overflow:auto;padding:6px 0;font-size:12.5px;line-height:22px}
+  .tree-item{display:flex;align-items:center;gap:6px;padding:0 8px 0 6px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none}
+  .tree-item:hover{background:rgba(255,255,255,.05)}
+  .tree-item.active{background:rgba(0,122,204,.18);color:#e6f0ff}
+  .tree-item .twist{width:14px;text-align:center;font-size:10px;color:var(--muted-2)}
+  .tree-item .icon{width:16px;text-align:center;flex-shrink:0}
+  .tree-item .name{overflow:hidden;text-overflow:ellipsis}
+  .tree-children{padding-left:14px}
+  .tree-error{padding:8px 10px;color:#c27;color:#f0a0a0;font-size:11px}
+  /* Editor */
+  #editor{flex:1;background:#121212;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+  #editorHeader{height:32px;display:flex;align-items:center;gap:8px;padding:0 10px;background:var(--panel);border-bottom:1px solid var(--border);font-size:12px;flex-shrink:0}
+  #currentFile{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+  #currentFile.has-file{color:var(--text)}
+  #dirtyDot{width:7px;height:7px;border-radius:50%;background:#cca700;display:none}
+  #dirtyDot.dirty{display:block}
+  #editorHeader button{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:#232323;color:var(--muted);cursor:pointer;font-size:11px}
+  #editorHeader button:hover{background:#2a2a2a;color:var(--text)}
+  #editorHeader button:disabled{opacity:.45;cursor:default}
+  #editorContainer{flex:1;position:relative;min-height:0}
+  #monacoHost{position:absolute;inset:0}
+  #fallbackEditor{width:100%;height:100%;background:#1e1e1e;color:#d4d4d4;border:0;outline:0;padding:10px;font-family:Consolas,monospace;font-size:13px;resize:none;display:none}
+  #editorPlaceholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted-2);font-size:12.5px;padding:20px;text-align:center}
   /* Agent — Cursor composer style */
   #agent{width:360px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
   .agent-tabs{display:flex;align-items:center;gap:4px;padding:6px 6px 0 6px;border-bottom:1px solid var(--border);background:var(--panel)}
@@ -20,12 +44,16 @@
   .tabs-spacer{flex:1}
   .icon-btn{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;font-size:13px}
   .icon-btn:hover{background:var(--panel-2);border-color:var(--border);color:var(--text)}
+  #agentError{display:none;align-items:center;gap:8px;padding:8px 10px;background:#2a1a1a;border-bottom:1px solid #4a2222;color:#e8a0a0;font-size:11px}
+  #agentError.visible{display:flex}
+  #agentError a{color:#f0a0a0;text-decoration:underline}
+  #agentRetryBtn{padding:3px 8px;border-radius:6px;border:1px solid #5a2a2a;background:#3a1e1e;color:#f0c0c0;cursor:pointer;font-size:11px}
+  #agentRetryBtn:hover{background:#4a2626}
   #chat{flex:1;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:6px;background:var(--panel)}
   .msg{padding:7px 9px;border-radius:8px;max-width:100%;white-space:pre-wrap;font-size:12.5px;line-height:1.45}
   .msg.user{background:rgba(0,122,204,.14);border:1px solid rgba(0,122,204,.22);align-self:flex-end;color:#e6f0ff}
   .msg.agent{background:var(--panel-2);border:1px solid var(--border)}
   .msg .meta{font-size:10.5px;color:var(--muted-2);margin-bottom:3px}
-  /* Composer — tight rhythm */
   .composer-wrap{padding:8px;background:var(--panel-2);border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
   .composer{display:flex;align-items:flex-end;gap:6px;background:#141414;border:1px solid var(--border);border-radius:10px;padding:6px 6px 6px 10px;transition:border-color .12s}
   .composer:focus-within{border-color:var(--accent)}
@@ -51,30 +79,24 @@
 </head>
 <body>
   <div id="explorer">
-    <h3>Explorer</h3>
-    <div id="fileTree" style="font-size:12.5px;color:var(--muted)">(File tree — Code-OSS explorer in full build)<br><br>
-      <div id="workspaceLabel"></div>
-    </div>
+    <div id="explorerHeader"><h3>Explorer</h3><span id="workspaceLabelShort" style="font-size:11px;color:var(--muted-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px"></span><button id="refreshBtn" title="Refresh">↻</button></div>
+    <div id="fileTree"><div class="tree-error">Loading…</div></div>
   </div>
   <div id="editor">
-    <div style="color:var(--muted);font-size:11px;margin-bottom:0">Editor — Monaco (Code-OSS) in full build</div>
-    <div id="monacoStub" style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px;font-family:Consolas,monospace;font-size:12.5px;min-height:220px;flex:1">Open a file from the explorer to edit.<br><br>Agent diff previews appear here with Accept/Reject.</div>
+    <div id="editorHeader"><span id="currentFile">No file open</span><span id="dirtyDot" title="Unsaved changes"></span><span style="flex:1"></span><button id="saveBtn" disabled>Save (Ctrl+S)</button></div>
+    <div id="editorContainer"><div id="monacoHost"></div><textarea id="fallbackEditor" spellcheck="false"></textarea><div id="editorPlaceholder">Open a file from the explorer to edit — click any file on the left. Monaco loads from local node_modules; if offline, a textarea fallback is used.</div></div>
   </div>
   <div id="agent">
-    <!-- Tab strip — Cursor style -->
     <div class="agent-tabs" role="tablist">
       <button class="tab active" role="tab" aria-selected="true">Agent</button>
       <button class="tab" id="newSessionBtn" title="New session">+</button>
       <div class="tabs-spacer"></div>
       <button id="settingsBtn" class="icon-btn" title="BYOK & settings">⚙</button>
-      <!-- keep hidden providerSelect for compat, quickModel is primary -->
       <select id="providerSelect" style="display:none"></select>
       <span id="modelBadge" style="display:none"></span>
     </div>
-
+    <div id="agentError"><span id="agentErrorText"></span><button id="agentRetryBtn" type="button">Retry</button><a href="https://opencode.ai" target="_blank" rel="noopener">opencode.ai</a><button onclick="this.parentElement.classList.remove('visible')" style="margin-left:auto;background:none;border:0;color:var(--muted);cursor:pointer">✕</button></div>
     <div id="chat"></div>
-
-    <!-- Composer — tight -->
     <div class="composer-wrap">
       <div class="composer">
         <textarea id="prompt" rows="1" placeholder="Plan, build, / for commands, @ for context"></textarea>
@@ -84,35 +106,194 @@
         </div>
       </div>
       <div class="quick-row">
-        <select id="quickMode" class="pill-select" title="Mode">
-          <option>Agent</option>
-          <option>Ask</option>
-          <option>Plan</option>
-          <option>Build</option>
-        </select>
+        <select id="quickMode" class="pill-select" title="Mode"><option>Agent</option><option>Ask</option><option>Plan</option><option>Build</option></select>
         <select id="quickModel" class="pill-select" title="Model — quick switch"><option>no model</option></select>
         <span id="quickModelHint" class="pill-muted"></span>
       </div>
     </div>
-
     <div id="settingsPanel">
       <h4 style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">BYOK Providers</h4>
       <div id="providerList"></div>
-      <div style="font-size:11px;color:var(--muted-2);margin-top:6px">/</div>
     </div>
   </div>
 <script>
   const folder = new URLSearchParams(location.search).get('folder') || '(no folder)';
-  document.getElementById('workspaceLabel').textContent = folder;
+  const isRemote = folder.startsWith('ssh://') || folder.startsWith('vscode-remote://');
+  document.getElementById('workspaceLabelShort').textContent = folder.split(/[\\/]/).pop() || folder;
+  document.getElementById('workspaceLabelShort').title = folder;
 
-  // Tabs: new session clears chat
-  document.getElementById('newSessionBtn').addEventListener('click', ()=>{ document.getElementById('chat').innerHTML=''; document.getElementById('prompt').value=''; });
-  // Attach button hints @
+  // --- Real file tree + Monaco (interim minimal before full Code-OSS) ---
+  let currentFilePath = null;
+  let isDirty = false;
+  let monacoEditor = null;
+  let monacoLoaded = false;
+
+  function setDirty(v){ isDirty=v; document.getElementById('dirtyDot').classList.toggle('dirty', v); document.getElementById('saveBtn').disabled = !v || !currentFilePath; }
+
+  // Monaco loader: try local node_modules first, fallback to CDN, then textarea
+  function loadMonaco() {
+    return new Promise((resolve)=>{
+      const done = (ok)=>{ monacoLoaded=ok; resolve(ok); };
+      const tryLocal = ()=>{
+        const s=document.createElement('script');
+        s.src='../../node_modules/monaco-editor/min/vs/loader.js';
+        s.onload=()=>{
+          try{
+            require.config({paths:{vs:'../../node_modules/monaco-editor/min/vs'}});
+            require(['vs/editor/editor.main'], ()=>{
+              monacoEditor = monaco.editor.create(document.getElementById('monacoHost'), {value:'',language:'plaintext',theme:'vs-dark',automaticLayout:true,minimap:{enabled:false},fontSize:13,scrollBeyondLastLine:false});
+              monacoEditor.onDidChangeModelContent(()=>{ if(!isDirty){ setDirty(true);} document.getElementById('editorPlaceholder').style.display='none'; });
+              monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, ()=> saveCurrent());
+              done(true);
+            }, ()=> tryCdn());
+          }catch{ tryCdn(); }
+        };
+        s.onerror=()=> tryCdn();
+        document.head.appendChild(s);
+      };
+      const tryCdn=()=>{
+        const s=document.createElement('script');
+        s.src='https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js';
+        s.onload=()=>{
+          try{
+            require.config({paths:{vs:'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs'}});
+            require(['vs/editor/editor.main'], ()=>{
+              monacoEditor = monaco.editor.create(document.getElementById('monacoHost'), {value:'',language:'plaintext',theme:'vs-dark',automaticLayout:true,minimap:{enabled:false}});
+              monacoEditor.onDidChangeModelContent(()=> setDirty(true));
+              monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, ()=> saveCurrent());
+              done(true);
+            }, ()=> done(false));
+          }catch{ done(false); }
+        };
+        s.onerror=()=> done(false);
+        document.head.appendChild(s);
+      };
+      tryLocal();
+      setTimeout(()=>{ if(!monacoLoaded) done(false); }, 6000);
+    });
+  }
+  function languageFor(path){
+    const ext=path.split('.').pop().toLowerCase();
+    const map={ts:'typescript',js:'javascript',jsx:'javascript',tsx:'typescript',json:'json',py:'python',css:'css',html:'html',md:'markdown',rs:'rust',go:'go',java:'java',c:'c',cpp:'cpp',sh:'shell',yaml:'yaml',yml:'yaml',toml:'toml',sql:'sql'};
+    return map[ext]||'plaintext';
+  }
+  async function openFile(filePath){
+    const placeholder=document.getElementById('editorPlaceholder');
+    const fallback=document.getElementById('fallbackEditor');
+    placeholder.style.display='none';
+    document.getElementById('currentFile').textContent=filePath;
+    document.getElementById('currentFile').classList.add('has-file');
+    currentFilePath=filePath; setDirty(false);
+    const res = await window.form.readFile(filePath);
+    if (res && res.error){
+      if (monacoEditor) monacoEditor.setValue(`// Failed to open ${filePath}\n// ${res.error}`);
+      else { fallback.style.display='block'; fallback.value=`Failed to open ${res.error}`; }
+      return;
+    }
+    const content=res.content||'';
+    if (monacoEditor){
+      fallback.style.display='none';
+      document.getElementById('monacoHost').style.display='block';
+      monaco.editor.setModelLanguage(monacoEditor.getModel(), languageFor(filePath));
+      monacoEditor.setValue(content);
+      setDirty(false);
+      monacoEditor.focus();
+    } else {
+      document.getElementById('monacoHost').style.display='none';
+      fallback.style.display='block';
+      fallback.value=content;
+      fallback.oninput=()=> setDirty(fallback.value!==content);
+      fallback.focus();
+    }
+  }
+  async function saveCurrent(){
+    if (!currentFilePath) return;
+    let content;
+    if (monacoEditor && monacoEditor.getModel()) content=monacoEditor.getValue();
+    else content=document.getElementById('fallbackEditor').value;
+    const res=await window.form.saveFile(currentFilePath, content);
+    if (res && res.error){ alert('Save failed: '+res.error); return; }
+    setDirty(false);
+  }
+  document.getElementById('saveBtn').addEventListener('click', saveCurrent);
+  document.addEventListener('keydown', (e)=>{ if((e.ctrlKey||e.metaKey)&& e.key.toLowerCase()==='s'){ e.preventDefault(); saveCurrent(); }});
+
+  // Tree rendering
+  function createTreeItem(entry, depth){
+    const row=document.createElement('div');
+    row.className='tree-item';
+    row.dataset.path=entry.path;
+    row.style.paddingLeft=(6+depth*14)+'px';
+    const twist=document.createElement('span'); twist.className='twist';
+    const icon=document.createElement('span'); icon.className='icon';
+    const name=document.createElement('span'); name.className='name'; name.textContent=entry.name;
+    if (entry.isDirectory){ twist.textContent='▸'; icon.textContent='📁'; }
+    else { twist.textContent=''; icon.textContent= entry.name.endsWith('.ts')?'⟡': entry.name.endsWith('.js')?'◈': entry.name.endsWith('.json')?'⬡': '📄'; }
+    row.append(twist, icon, name);
+    return row;
+  }
+  async function renderDir(dirPath, container, depth){
+    container.innerHTML='<div class="tree-error">Loading…</div>';
+    const res= await window.form.listFiles(dirPath);
+    container.innerHTML='';
+    if (res && res.error){ container.innerHTML=`<div class="tree-error">${res.error.replace(/</g,'&lt;')}</div>`; return; }
+    if (!Array.isArray(res)){ container.innerHTML='<div class="tree-error">No files</div>'; return; }
+    if (res.length===0){ container.innerHTML='<div class="tree-error" style="color:var(--muted-2)">Empty folder</div>'; return; }
+    res.forEach(entry=>{
+      const row=createTreeItem(entry, depth);
+      const children=document.createElement('div'); children.className='tree-children'; children.style.display='none';
+      container.appendChild(row);
+      container.appendChild(children);
+      if (entry.isDirectory){
+        row.addEventListener('click', async (e)=>{
+          e.stopPropagation();
+          const expanded=row.dataset.expanded==='1';
+          if (expanded){ row.dataset.expanded='0'; row.querySelector('.twist').textContent='▸'; row.querySelector('.icon').textContent='📁'; children.style.display='none'; }
+          else { row.dataset.expanded='1'; row.querySelector('.twist').textContent='▾'; row.querySelector('.icon').textContent='📂'; if (!children.dataset.loaded){ await renderDir(entry.path, children, depth+1); children.dataset.loaded='1'; } children.style.display='block'; }
+        });
+      } else {
+        row.addEventListener('click', ()=>{
+          document.querySelectorAll('.tree-item.active').forEach(el=>el.classList.remove('active'));
+          row.classList.add('active');
+          openFile(entry.path);
+        });
+      }
+    });
+  }
+  async function initExplorer(){
+    const tree=document.getElementById('fileTree');
+    if (isRemote){ tree.innerHTML=`<div class="tree-error">Remote SSH workspace<br><span style="color:var(--muted-2)">${folder.replace(/</g,'&lt;')}<br>File tree via SSH not yet in minimal build — will use Remote-SSH extension host in full Code-OSS build.</span></div>`; return; }
+    if (!folder || folder==='(no folder)' || !window.form || !window.form.listFiles){ tree.innerHTML='<div class="tree-error">No folder open</div>'; return; }
+    try{
+      const stat=await window.form.listFiles(folder);
+      if (stat && stat.error){ tree.innerHTML=`<div class="tree-error">Cannot read ${folder.replace(/</g,'&lt;')}<br>${stat.error}</div>`; return; }
+      tree.innerHTML='';
+      await renderDir(folder, tree, 0);
+    } catch(e){ tree.innerHTML=`<div class="tree-error">${(e.message||e).toString().replace(/</g,'&lt;')}</div>`; }
+  }
+  document.getElementById('refreshBtn').addEventListener('click', initExplorer);
+  // Init
+  (async ()=>{
+    await loadMonaco();
+    if (!monacoLoaded){
+      // show fallback textarea
+      document.getElementById('monacoHost').style.display='none';
+      const fb=document.getElementById('fallbackEditor');
+      fb.style.display='block';
+      fb.placeholder='Monaco failed to load (offline/CDN blocked). Using plain text fallback — editing and Save (Ctrl+S) still works.';
+    }
+    initExplorer();
+  })();
+
+  // --- Agent ---
+  document.getElementById('newSessionBtn').addEventListener('click', ()=>{ document.getElementById('chat').innerHTML=''; document.getElementById('prompt').value=''; hideAgentError(); });
   document.getElementById('attachBtn').addEventListener('click', ()=>{
     const ta=document.getElementById('prompt'); const pos=ta.selectionStart||0; const v=ta.value; ta.value=v.slice(0,pos)+'@'+v.slice(pos); ta.focus();
   });
+  function showAgentError(msg){ const el=document.getElementById('agentError'); const t=document.getElementById('agentErrorText'); t.textContent=msg; el.classList.add('visible'); }
+  function hideAgentError(){ document.getElementById('agentError').classList.remove('visible'); }
+  document.getElementById('agentRetryBtn').addEventListener('click', async ()=>{ hideAgentError(); serverUrl=null; const p=document.getElementById('prompt').value.trim(); if(p) document.getElementById('sendBtn').click(); else { const res=await window.form.getServerUrl(folder); if(res && res.error) showAgentError(res.error); } });
 
-  // Provider quick-switch pills + gear panel
   async function loadProviders(){
     const api = window.form;
     if(!api) return;
@@ -128,19 +309,13 @@
     if(active && active.providerId) sel.value = active.providerId;
     const badge = document.getElementById('modelBadge');
     badge.textContent = active && active.model ? `${active.model} via ${active.providerId}` : 'no model';
-
-    // Quick model pill: list current provider’s models + active model
     const qModel = document.getElementById('quickModel');
     const hint = document.getElementById('quickModelHint');
     qModel.innerHTML='';
-    // add placeholder
     if (!providers.length) { qModel.innerHTML='<option>no model</option>'; hint.textContent=''; }
     else {
-      // collect distinct models known
       const opts = [];
-      providers.forEach(p=>{
-        if (p.model) opts.push({id:p.model, label:`${p.model} · ${p.displayName}`, provider:p.id});
-      });
+      providers.forEach(p=>{ if (p.model) opts.push({id:p.model, label:`${p.model} · ${p.displayName}`, provider:p.id}); });
       if (active && active.model) {
         const exists = opts.some(o=>o.id===active.model);
         if (!exists) opts.unshift({id:active.model, label:`${active.model} · ${active.providerId}`, provider:active.providerId});
@@ -154,7 +329,6 @@
       });
       hint.textContent = active && active.providerId ? `via ${active.providerId}` : '';
     }
-
     const list=document.getElementById('providerList');
     list.innerHTML = providers.map(p=>`
       <div style="border:1px solid var(--border);padding:8px;border-radius:8px;margin-bottom:6px;background:var(--panel-2)">
@@ -183,10 +357,12 @@
     const baseUrl = document.querySelector(`input[data-id="${id}"][data-field="baseUrl"]`)?.value || undefined;
     const plain = document.querySelector(`input[data-id="${id}"][data-field="apiKey"]`)?.value || undefined;
     await window.form.saveProvider({ id, displayName: id, baseUrl, enabled: true, _plainApiKey: plain });
+    hideAgentError();
     await loadProviders();
   }
   async function pickModel(providerId, model){
     await window.form.setActiveModel(providerId, model);
+    hideAgentError();
     await loadProviders();
   }
   document.getElementById('settingsBtn').onclick = ()=>{
@@ -201,44 +377,36 @@
     if(prov && prov.model) await window.form.setActiveModel(id, prov.model);
     loadProviders();
   };
-  // Quick model switch
   document.getElementById('quickModel').addEventListener('change', async (e)=>{
     const opt = e.target.selectedOptions[0];
     const model = opt.value;
     const provider = opt.dataset.provider;
-    if (model && provider) { await window.form.setActiveModel(provider, model); await loadProviders(); }
+    if (model && provider) { await window.form.setActiveModel(provider, model); hideAgentError(); await loadProviders(); }
   });
-  document.getElementById('quickMode').addEventListener('change', (e)=>{
-    // Mode is UI-only for now (Agent/Ask/Plan/Build) — could map to different prompts; keep for quick switching
-    console.log('mode', e.target.value);
-  });
-
-  // Slash / @ hint handling
+  document.getElementById('quickMode').addEventListener('change', (e)=>{ console.log('mode', e.target.value); });
   const promptEl = document.getElementById('prompt');
-  promptEl.addEventListener('keydown', (e)=>{
-    if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('sendBtn').click(); }
-  });
+  promptEl.addEventListener('keydown', (e)=>{ if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('sendBtn').click(); } });
   promptEl.addEventListener('input', ()=>{
     const v=promptEl.value;
-    // hint: if starts with / show command hint in quickModelHint
     const hint=document.getElementById('quickModelHint');
     if (v.startsWith('/')) hint.textContent = ' /plan /build /explain /fix';
     else if (v.includes('@')) hint.textContent = ' @file @folder';
-    else {
-      // restore provider hint
-      window.form && window.form.getActiveModel().then(a=>{ hint.textContent = a && a.providerId ? `via ${a.providerId}` : ''; });
-    }
-    // auto-resize
-    promptEl.style.height='auto';
-    promptEl.style.height=Math.min(88, promptEl.scrollHeight)+'px';
+    else { window.form && window.form.getActiveModel().then(a=>{ hint.textContent = a && a.providerId ? `via ${a.providerId}` : ''; }); }
+    promptEl.style.height='auto'; promptEl.style.height=Math.min(88, promptEl.scrollHeight)+'px';
   });
 
-  // Chat
   let serverUrl = null;
   async function ensureServer(){
     if(serverUrl) return serverUrl;
     const res = await window.form.getServerUrl(folder);
-    if(res && res.error){ addMsg('agent', 'OpenCode server error: '+res.error+'\nIs `opencode` on PATH? Install from https://opencode.ai', 'system'); return null; }
+    if(res && res.error){
+      // Graceful inline state matching 'no API key' handling — don't throw
+      const isNotFound = res.error.includes('OpenCode backend not found') || res.error.includes('ENOENT');
+      if (isNotFound) { showAgentError(res.error); }
+      else { addMsg('agent', res.error, 'system'); }
+      return null;
+    }
+    hideAgentError();
     serverUrl = typeof res==='string'?res:res.url||res;
     return serverUrl;
   }
@@ -253,15 +421,23 @@
     const prompt=document.getElementById('prompt').value.trim();
     if(!prompt) return;
     addMsg('user', prompt);
-    document.getElementById('prompt').value='';
-    promptEl.style.height='auto';
+    document.getElementById('prompt').value=''; promptEl.style.height='auto';
     const url = await ensureServer();
-    if(!url){ addMsg('agent','No OpenCode server — configure provider first.', 'error'); return; }
+    if(!url){
+      // showAgentError already handled; add generic inline hint like 'no API key' pattern
+      if (!document.getElementById('agentError').classList.contains('visible')) addMsg('agent','Agent not ready — configure provider/backend and click Retry.', 'system');
+      return;
+    }
     const active = await window.form.getActiveModel();
-    const modelLabel = active && active.model ? `${active.model} via ${active.providerId}` : 'default model';
+    if (!active || !active.model){
+      addMsg('agent','No model selected — open ⚙ and pick a provider/model first.', 'system');
+      document.getElementById('settingsPanel').classList.add('visible'); loadProviders();
+      return;
+    }
+    const modelLabel = `${active.model} via ${active.providerId}`;
     addMsg('agent','…waiting for '+modelLabel+'…', modelLabel);
     try{
-      const res = await fetch(`${url}/session`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prompt, model: active?.model }) });
+      const res = await fetch(`${url}/session`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prompt, model: active.model }) });
       if(!res.ok) throw new Error('HTTP '+res.status);
       const text = await res.text();
       const last = document.getElementById('chat').lastElementChild;
