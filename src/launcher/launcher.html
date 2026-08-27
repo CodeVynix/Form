@@ -5,95 +5,330 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Form — Open a Project</title>
 <style>
-  *{box-sizing:border-box} body{margin:0;font-family:Segoe UI,system-ui,sans-serif;background:#1e1e1e;color:#ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh}
-  h1{font-weight:300;letter-spacing:0.04em;margin:0 0 6px} .sub{color:#888;font-size:13px;margin-bottom:28px}
-  .cards{display:flex;gap:16px}
-  .card{width:200px;background:#252526;border:1px solid #333;border-radius:8px;padding:20px;cursor:pointer;transition:border-color .15s}
-  .card:hover{border-color:#007acc} .card h3{margin:0 0 6px;font-size:14px;color:#eee} .card p{margin:0;font-size:12px;color:#999;line-height:1.4}
-  .panel{margin-top:20px;width:640px;background:#252526;border:1px solid #333;border-radius:8px;padding:16px;display:none}
-  .panel.visible{display:block} input,select{width:100%;padding:8px;background:#1e1e1e;border:1px solid #333;color:#ccc;border-radius:4px;margin:6px 0}
-  button{padding:8px 14px;background:#007acc;color:#fff;border:0;border-radius:4px;cursor:pointer} button.secondary{background:#333}
-  .steps{display:flex;gap:8px;margin-bottom:12px} .step{flex:1;height:4px;background:#333;border-radius:2px} .step.active{background:#007acc}
-  #log{font-family:Consolas,monospace;font-size:12px;white-space:pre-wrap;max-height:120px;overflow:auto;background:#1e1e1e;padding:8px;border-radius:4px;margin-top:8px}
+  :root { --bg:#121212; --panel:#212121; --panel-2:#252526; --border:#2e2e2e; --border-hover:#3a3a3a; --accent:#007acc; --accent-hover:#0e8ed6; --text:#e6e6e6; --muted:#9a9a9a; --muted-2:#777; }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:radial-gradient(800px 400px at 50% 0%, #1a1a1a 0%, var(--bg) 60%);color:var(--text);display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:28px 16px 24px; -webkit-font-smoothing:antialiased}
+  .wrap{width:100%;max-width:680px;display:flex;flex-direction:column;align-items:center;gap:18px}
+  h1{font-weight:300;font-size:42px;letter-spacing:0.06em;margin:6px 0 0;line-height:1}
+  .sub{color:var(--muted);font-size:13.5px;letter-spacing:0.02em;margin:0 0 6px}
+  /* Top unified search bar */
+  .top-bar{width:100%;display:flex;align-items:center;gap:0;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:6px;transition:border-color .15s, box-shadow .15s;box-shadow:0 2px 16px rgba(0,0,0,.35)}
+  .top-bar:focus-within{border-color:var(--accent);box-shadow:0 2px 16px rgba(0,0,0,.45), 0 0 0 3px rgba(0,122,204,.18)}
+  .mode-picker{position:relative;flex-shrink:0}
+  .mode-btn{display:flex;align-items:center;gap:6px;padding:9px 12px;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12.5px;font-weight:500;cursor:pointer;transition:background .12s, border-color .12s;white-space:nowrap}
+  .mode-btn:hover{background:#2a2a2a;border-color:var(--border-hover)}
+  .mode-btn .caret{font-size:10px;opacity:.7}
+  .mode-menu{position:absolute;top:calc(100% + 8px);left:0;min-width:160px;background:#1e1e1e;border:1px solid var(--border);border-radius:8px;box-shadow:0 12px 32px rgba(0,0,0,.6);padding:4px;z-index:20}
+  .mode-menu.hidden{display:none}
+  .mode-menu div{padding:8px 10px;border-radius:6px;font-size:12.5px;color:var(--muted);cursor:pointer}
+  .mode-menu div:hover{background:var(--panel);color:var(--text)}
+  .mode-menu div.active{color:var(--text);background:rgba(0,122,204,.18)}
+  .top-bar input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--text);font-size:13.5px;padding:8px 12px}
+  .top-bar input::placeholder{color:var(--muted-2)}
+  .submit-btn{flex-shrink:0;width:38px;height:38px;border-radius:8px;border:0;background:var(--accent);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s, transform .08s}
+  .submit-btn:hover{background:var(--accent-hover)}
+  .submit-btn:active{transform:scale(.96)}
+  .status{width:100%;min-height:16px;font-size:11.5px;color:var(--muted-2);padding:0 4px}
+  .status.error{color:#f18a8a}
+  .status.ok{color:#7cc88a}
+  /* Cards */
+  .cards{width:100%;display:flex;gap:16px;justify-content:center}
+  .card{flex:1;max-width:100%;background:linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);border:1px solid var(--border);border-radius:12px;padding:22px 20px;cursor:pointer;transition:border-color .15s, transform .12s, box-shadow .15s, background .15s;position:relative;overflow:hidden}
+  .card::before{content:"";position:absolute;inset:0;border-radius:12px;opacity:0;background:radial-gradient(400px 120px at 30% 0%, rgba(0,122,204,.08), transparent 70%);transition:opacity .2s;pointer-events:none}
+  .card:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,.35)}
+  .card:hover::before{opacity:1}
+  .card:active{transform:translateY(0)}
+  .card--primary{max-width:680px;width:100%;padding:24px 28px;display:flex;align-items:center;gap:18px;text-align:left;border-color:#2f2f2f}
+  .card--primary:hover{border-color:var(--accent)}
+  .card-icon{width:44px;height:44px;border-radius:10px;background:rgba(0,122,204,.14);border:1px solid rgba(0,122,204,.28);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+  .card h3{margin:0 0 4px;font-size:15px;font-weight:600;color:var(--text);letter-spacing:.01em}
+  .card p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.45}
+  .card--primary h3{font-size:16px}
+  .card--primary p{font-size:12.8px}
+  .hint{width:100%;text-align:center;font-size:11px;color:var(--muted-2);margin-top:2px;letter-spacing:.02em}
+  /* Panels (Clone/SSH) */
+  .panel{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px;display:none;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+  .panel.visible{display:block;animation:fadeIn .14s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+  .panel h3{margin:0 0 12px;font-size:13px;font-weight:600;letter-spacing:.02em}
+  .panel input, .panel select{width:100%;padding:10px 11px;background:#181818;border:1px solid var(--border);color:var(--text);border-radius:8px;margin:6px 0;font-size:12.8px;transition:border-color .12s}
+  .panel input:focus{outline:0;border-color:var(--accent)}
+  .panel input::placeholder{color:var(--muted-2)}
+  .btn-row{display:flex;gap:8px;margin-top:10px}
+  button.primary{padding:8px 16px;background:var(--accent);color:#fff;border:0;border-radius:8px;cursor:pointer;font-size:12.8px;font-weight:500;transition:background .12s}
+  button.primary:hover{background:var(--accent-hover)}
+  button.secondary{padding:8px 16px;background:#2a2a2a;color:var(--muted);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12.8px;transition:background .12s, color .12s}
+  button.secondary:hover{background:#333;color:var(--text)}
+  .steps{display:flex;gap:8px;margin-bottom:12px}
+  .step{flex:1;height:4px;background:#2a2a2a;border-radius:2px;transition:background .2s}
+  .step.active{background:var(--accent)}
+  #log{font-family:Consolas, "Cascadia Code", monospace;font-size:11.5px;white-space:pre-wrap;max-height:120px;overflow:auto;background:#181818;border:1px solid var(--border);padding:10px;border-radius:8px;margin-top:10px}
+  .tip{font-size:11px;color:var(--muted-2);margin-top:8px;line-height:1.4}
 </style>
 </head>
 <body>
-  <h1>Form</h1>
-  <div class="sub">Code-OSS based IDE · Open VSX · OpenCode agent</div>
-  <div class="cards">
-    <div class="card" id="btnOpen"><h3>Open Project</h3><p>Open a local folder as workspace</p></div>
-    <div class="card" id="btnClone"><h3>Clone Repo</h3><p>Clone from a git URL (https or ssh)</p></div>
-    <div class="card" id="btnSsh"><h3>Connect to SSH</h3><p>Open a remote directory over SSH</p></div>
-  </div>
+  <div class="wrap">
+    <h1>Form</h1>
+    <div class="sub">Code-OSS based IDE · Open VSX · OpenCode agent</div>
 
-  <div class="panel" id="clonePanel">
-    <h3 style="margin:0 0 8px">Clone Repository</h3>
-    <input id="gitUrl" placeholder="https://github.com/user/repo.git  or  git@github.com:user/repo.git" />
-    <div style="margin-top:8px;display:flex;gap:8px"><button id="doClone">Clone</button><button class="secondary" onclick="hidePanels()">Cancel</button></div>
-    <div id="log"></div>
-  </div>
+    <!-- Unified top search bar: Clone or SSH -->
+    <div class="top-bar" id="topBar" role="search">
+      <div class="mode-picker">
+        <button class="mode-btn" id="modeBtn" type="button" aria-haspopup="menu"><span id="modeLabel">Auto</span> <span class="caret">▾</span></button>
+        <div class="mode-menu hidden" id="modeMenu" role="menu">
+          <div data-mode="auto" class="active">Auto-detect</div>
+          <div data-mode="clone">Clone Repo</div>
+          <div data-mode="ssh">Connect to SSH</div>
+        </div>
+      </div>
+      <input id="topInput" type="text" placeholder="Clone a repo URL or connect via SSH..." aria-label="Clone repo URL or SSH connection" autocomplete="off" spellcheck="false" />
+      <button id="topSubmit" class="submit-btn" type="button" aria-label="Run">→</button>
+    </div>
+    <div id="topStatus" class="status"></div>
 
-  <div class="panel" id="sshPanel">
-    <h3 style="margin:0 0 8px">Connect to SSH</h3>
-    <div class="steps"><div class="step active" id="s1"></div><div class="step" id="s2"></div><div class="step" id="s3"></div></div>
-    <div id="sshStep1">
-      <input id="sshHost" placeholder="Host (e.g. 192.168.1.10 or my.server.com)" />
-      <input id="sshUser" placeholder="Username" />
-      <button onclick="sshNext(2)">Next</button>
+    <!-- Prominent Open Project card (only card now) -->
+    <div class="cards">
+      <div class="card card--primary" id="btnOpen" role="button" tabindex="0" aria-label="Open local folder">
+        <div class="card-icon">📁</div>
+        <div>
+          <h3>Open Project</h3>
+          <p>Open a local folder as workspace — browse and pick any directory on this machine.</p>
+        </div>
+      </div>
     </div>
-    <div id="sshStep2" style="display:none">
-      <label style="font-size:12px"><input type="radio" name="auth" value="privateKey" checked /> Private key (preferred)</label>
-      <label style="font-size:12px;margin-left:12px"><input type="radio" name="auth" value="password" /> Password</label>
-      <input id="sshKey" placeholder="Private key path (e.g. C:\Users\you\.ssh\id_rsa)" />
-      <input id="sshPass" placeholder="Password" type="password" style="display:none" />
-      <div style="margin-top:8px"><button onclick="sshNext(3)">Next</button> <button class="secondary" onclick="sshNext(1)">Back</button></div>
+    <div class="hint">Tip: use the bar above to paste a git URL (https / ssh) or an SSH target like <code style="color:var(--muted);background:#1e1e1e;padding:1px 5px;border-radius:4px">user@host</code></div>
+
+    <div class="panel" id="clonePanel">
+      <h3>Clone Repository</h3>
+      <input id="gitUrl" placeholder="https://github.com/user/repo.git  or  git@github.com:user/repo.git" />
+      <div class="btn-row"><button class="primary" id="doClone">Clone</button><button class="secondary" onclick="hidePanels()">Cancel</button></div>
+      <div id="log"></div>
     </div>
-    <div id="sshStep3" style="display:none">
-      <input id="sshRemote" placeholder="Remote path (e.g. /home/user/project)" />
-      <div style="margin-top:8px"><button id="doSsh">Connect</button> <button class="secondary" onclick="sshNext(2)">Back</button></div>
-      <p style="font-size:11px;color:#888;margin-top:8px">Password is never saved to disk. Opt-in OS keychain storage only.</p>
+
+    <div class="panel" id="sshPanel">
+      <h3>Connect to SSH</h3>
+      <div class="steps"><div class="step active" id="s1"></div><div class="step" id="s2"></div><div class="step" id="s3"></div></div>
+      <div id="sshStep1">
+        <input id="sshHost" placeholder="Host (e.g. 192.168.1.10 or my.server.com)" />
+        <input id="sshUser" placeholder="Username" />
+        <button class="primary" onclick="sshNext(2)">Next</button>
+      </div>
+      <div id="sshStep2" style="display:none">
+        <label style="font-size:12px"><input type="radio" name="auth" value="privateKey" checked /> Private key (preferred)</label>
+        <label style="font-size:12px;margin-left:12px"><input type="radio" name="auth" value="password" /> Password</label>
+        <input id="sshKey" placeholder="Private key path (e.g. C:\Users\you\.ssh\id_rsa)" />
+        <input id="sshPass" placeholder="Password" type="password" style="display:none" />
+        <div class="btn-row"><button class="primary" onclick="sshNext(3)">Next</button> <button class="secondary" onclick="sshNext(1)">Back</button></div>
+      </div>
+      <div id="sshStep3" style="display:none">
+        <input id="sshRemote" placeholder="Remote path (e.g. /home/user/project)" />
+        <div class="btn-row"><button class="primary" id="doSsh">Connect</button> <button class="secondary" onclick="sshNext(2)">Back</button></div>
+        <p class="tip">Password is never saved to disk. Opt-in OS keychain storage only.</p>
+      </div>
     </div>
   </div>
 
 <script>
-  const api = window.form;
-  document.getElementById('btnOpen').onclick = () => api.openProject();
-  document.getElementById('btnClone').onclick = () => show('clonePanel');
-  document.getElementById('btnSsh').onclick = () => show('sshPanel');
-  function show(id){ hidePanels(); document.getElementById(id).classList.add('visible'); }
-  function hidePanels(){ document.querySelectorAll('.panel').forEach(p=>p.classList.remove('visible')); }
-  document.getElementById('doClone').onclick = async () => {
-    const url = document.getElementById('gitUrl').value.trim();
-    if(!url) return;
-    document.getElementById('log').textContent = 'Starting clone...\n';
-    const res = await api.cloneRepo(url);
-    if(res && res.error) document.getElementById('log').textContent += 'Error: '+res.error;
-  };
-  if(api.onCloneProgress) api.onCloneProgress(p=>{ document.getElementById('log').textContent += p.text; });
-  document.querySelectorAll('input[name="auth"]').forEach(r=>r.onchange=()=>{
-    const isKey = document.querySelector('input[name="auth"]:checked').value==='privateKey';
-    document.getElementById('sshKey').style.display = isKey?'':'none';
-    document.getElementById('sshPass').style.display = isKey?'none':'';
-  });
-  function sshNext(n){
-    document.getElementById('sshStep1').style.display = n===1?'':'none';
-    document.getElementById('sshStep2').style.display = n===2?'':'none';
-    document.getElementById('sshStep3').style.display = n===3?'':'none';
-    document.getElementById('s1').classList.toggle('active', n>=1);
-    document.getElementById('s2').classList.toggle('active', n>=2);
-    document.getElementById('s3').classList.toggle('active', n>=3);
-  }
-  document.getElementById('doSsh').onclick = async ()=>{
-    const req = {
-      host: document.getElementById('sshHost').value.trim(),
-      username: document.getElementById('sshUser').value.trim(),
-      authMethod: document.querySelector('input[name="auth"]:checked').value,
-      privateKeyPath: document.getElementById('sshKey').value.trim(),
-      password: document.getElementById('sshPass').value,
-      remotePath: document.getElementById('sshRemote').value.trim(),
+  // Wait for DOM + preload to be ready. Fixes #1: Open Project click not firing when script ran before window.form exposed.
+  document.addEventListener('DOMContentLoaded', () => {
+    const api = window.form;
+    const $ = (s) => document.getElementById(s);
+    const topInput = $('topInput'), topBtn = $('topSubmit'), topStatus = $('topStatus');
+    const modeBtn = $('modeBtn'), modeMenu = $('modeMenu'), modeLabel = $('modeLabel');
+    const clonePanel = $('clonePanel'), sshPanel = $('sshPanel'), logEl = $('log');
+
+    let manualMode = 'auto'; // auto | clone | ssh
+
+    const GIT_RE = /^(https?:\/\/.+\.git\/?|git@[^:]+:[^ \t]+\.git\/?|ssh:\/\/[^ \t]+\.git\/?|https?:\/\/[^ \t]+)$/i;
+    const SSH_AT_RE = /^[\w.\-@]+@[\w.\-.:]+(\/.*)?$/;
+
+    function isGitUrl(s) {
+      const t = s.trim();
+      if (!t) return false;
+      // treat anything with .git or http(s):// or git@ as git
+      if (t.includes('.git') || t.startsWith('http://') || t.startsWith('https://') || t.startsWith('git@') || t.startsWith('ssh://')) return GIT_RE.test(t) || t.includes('github.com') || t.includes('gitlab.com') || t.includes('bitbucket');
+      return false;
+    }
+    function isSshLike(s) {
+      const t = s.trim();
+      if (!t) return false;
+      if (t.startsWith('ssh ') || SSH_AT_RE.test(t)) return true;
+      // user@host, host, host:22, 192.168.1.1
+      if (/^[\w.\-]+@[\w.\-]+/.test(t)) return true;
+      if (/^[\w.\-]+\.[\w.\-]+$/.test(t) && !t.includes('/') ) return true; // my.server.com
+      return false;
+    }
+    function detectMode(value) {
+      if (manualMode !== 'auto') return manualMode;
+      if (isGitUrl(value)) return 'clone';
+      if (isSshLike(value)) return 'ssh';
+      // ambiguous input containing spaces or unknown -> default to clone if it has slash/git, otherwise ssh if it has @
+      if (value.includes('@')) return 'ssh';
+      return 'clone';
+    }
+
+    function setMode(m) {
+      manualMode = m;
+      modeLabel.textContent = m === 'auto' ? 'Auto' : m === 'clone' ? 'Clone' : 'SSH';
+      modeMenu.querySelectorAll('div').forEach(d => d.classList.toggle('active', d.dataset.mode === m));
+      modeMenu.classList.add('hidden');
+      if (topInput.value.trim()) {
+        const d = detectMode(topInput.value);
+        topStatus.textContent = m === 'auto' ? (isGitUrl(topInput.value) ? 'Detected: Clone Repo' : isSshLike(topInput.value) ? 'Detected: SSH' : '') : (m === 'clone' ? 'Mode: Clone Repo' : 'Mode: SSH');
+        topStatus.className = 'status ok';
+      }
+    }
+    modeBtn.addEventListener('click', (e) => { e.stopPropagation(); modeMenu.classList.toggle('hidden'); });
+    modeMenu.querySelectorAll('div').forEach(d => d.addEventListener('click', () => setMode(d.dataset.mode)));
+    document.addEventListener('click', () => modeMenu.classList.add('hidden'));
+    topInput.addEventListener('input', () => {
+      const v = topInput.value.trim();
+      if (!v) { topStatus.textContent = ''; return; }
+      if (manualMode === 'auto') {
+        if (isGitUrl(v)) { topStatus.textContent = 'Detected: Clone Repo'; topStatus.className='status ok'; }
+        else if (isSshLike(v)) { topStatus.textContent = 'Detected: SSH'; topStatus.className='status ok'; }
+        else topStatus.textContent = '';
+      } else {
+        topStatus.textContent = manualMode === 'clone' ? 'Mode: Clone Repo' : 'Mode: SSH';
+        topStatus.className='status ok';
+      }
+    });
+    topInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleTopSubmit(); });
+    topBtn.addEventListener('click', handleTopSubmit);
+
+    function parseSshInput(raw) {
+      let s = raw.trim().replace(/^ssh\s+/, '');
+      let username = '', host = '', remote = '';
+      // user@host[:port]/path  or  user@host:/path
+      const at = s.indexOf('@');
+      if (at >= 0) {
+        username = s.slice(0, at);
+        s = s.slice(at+1);
+      }
+      const slash = s.indexOf('/');
+      if (slash >= 0) {
+        host = s.slice(0, slash);
+        remote = s.slice(slash);
+      } else {
+        host = s;
+      }
+      // strip :port from host
+      const colonPort = host.match(/:(\d+)$/);
+      if (colonPort) host = host.slice(0, -colonPort[0].length);
+      return { host: host.trim(), username: username.trim(), remotePath: remote.trim() };
+    }
+
+    async function handleTopSubmit() {
+      const raw = topInput.value.trim();
+      if (!raw) { topStatus.textContent = 'Enter a git URL or SSH target'; topStatus.className='status error'; return; }
+      if (!api) { topStatus.textContent = 'Form bridge not ready — reload window'; topStatus.className='status error'; return; }
+      const mode = detectMode(raw);
+      topStatus.textContent = mode === 'clone' ? 'Cloning...' : 'Opening SSH...';
+      topStatus.className='status ok';
+      if (mode === 'clone') {
+        // Reuse existing Clone flow: set gitUrl input and invoke clone path directly
+        const gitUrlEl = document.getElementById('gitUrl');
+        if (gitUrlEl) gitUrlEl.value = raw;
+        show('clonePanel');
+        hidePanelsExcept('clonePanel'); // keep clone visible
+        document.getElementById('clonePanel').classList.add('visible');
+        logEl.textContent = 'Starting clone...\n';
+        try {
+          const res = await api.cloneRepo(raw);
+          if (res && res.error) { logEl.textContent += 'Error: ' + res.error; topStatus.textContent = res.error; topStatus.className='status error'; }
+          else topStatus.textContent = res && res.canceled ? '' : 'Clone started — check log';
+        } catch (e) { logEl.textContent += 'Error: ' + (e.message||e); topStatus.textContent = e.message; topStatus.className='status error'; }
+      } else {
+        // SSH: parse and prefill step 1, show SSH panel
+        const parsed = parseSshInput(raw);
+        const h = document.getElementById('sshHost');
+        const u = document.getElementById('sshUser');
+        const r = document.getElementById('sshRemote');
+        if (h) h.value = parsed.host;
+        if (u) u.value = parsed.username;
+        if (r && parsed.remotePath) r.value = parsed.remotePath;
+        show('sshPanel');
+        // If we have host+user+remote, we could auto-advance but keep step 1 for confirmation
+        sshNext(1);
+        topStatus.textContent = 'SSH — confirm host/user then continue';
+      }
+    }
+
+    // --- Fix #1: Open Project had silent failure when window.form was undefined or handler attached before DOM ---
+    const btnOpen = document.getElementById('btnOpen');
+    if (btnOpen) {
+      const triggerOpen = async (e) => {
+        if (e) e.preventDefault();
+        if (!api || typeof api.openProject !== 'function') {
+          console.error('[launcher] window.form.openProject unavailable', !!api);
+          topStatus.textContent = 'Open Project bridge not ready — reload';
+          topStatus.className='status error';
+          return;
+        }
+        btnOpen.style.opacity = '0.7';
+        try {
+          await api.openProject();
+        } catch (err) {
+          console.error('[launcher] openProject failed', err);
+          topStatus.textContent = (err && err.message) || 'Open failed';
+          topStatus.className='status error';
+        } finally {
+          btnOpen.style.opacity = '';
+        }
+      };
+      btnOpen.addEventListener('click', triggerOpen);
+      btnOpen.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') triggerOpen(e); });
+    }
+
+    // Existing card handlers for backward-compat (if elements still present)
+    const btnClone = document.getElementById('btnClone');
+    const btnSsh = document.getElementById('btnSsh');
+    if (btnClone) btnClone.addEventListener('click', () => show('clonePanel'));
+    if (btnSsh) btnSsh.addEventListener('click', () => show('sshPanel'));
+
+    function show(id){ hidePanels(); document.getElementById(id).classList.add('visible'); }
+    function hidePanels(){ document.querySelectorAll('.panel').forEach(p=>p.classList.remove('visible')); }
+    function hidePanelsExcept(id){ document.querySelectorAll('.panel').forEach(p=>{ if(p.id!==id) p.classList.remove('visible'); }); }
+    window.hidePanels = hidePanels;
+    document.getElementById('doClone').addEventListener('click', async () => {
+      const url = document.getElementById('gitUrl').value.trim();
+      if(!url) return;
+      logEl.textContent = 'Starting clone...\n';
+      try {
+        const res = await api.cloneRepo(url);
+        if(res && res.error) logEl.textContent += 'Error: '+res.error;
+      } catch(e){ logEl.textContent += 'Error: '+(e.message||e); }
+    });
+    if(api.onCloneProgress) api.onCloneProgress((p)=>{ logEl.textContent += p.text; });
+    document.querySelectorAll('input[name="auth"]').forEach(r=>r.addEventListener('change',()=>{
+      const isKey = document.querySelector('input[name="auth"]:checked').value==='privateKey';
+      document.getElementById('sshKey').style.display = isKey?'':'none';
+      document.getElementById('sshPass').style.display = isKey?'none':'';
+    }));
+    window.sshNext = function(n){
+      document.getElementById('sshStep1').style.display = n===1?'':'none';
+      document.getElementById('sshStep2').style.display = n===2?'':'none';
+      document.getElementById('sshStep3').style.display = n===3?'':'none';
+      document.getElementById('s1').classList.toggle('active', n>=1);
+      document.getElementById('s2').classList.toggle('active', n>=2);
+      document.getElementById('s3').classList.toggle('active', n>=3);
     };
-    await api.connectSsh(req);
-  };
+    document.getElementById('doSsh').addEventListener('click', async ()=>{
+      const req = {
+        host: document.getElementById('sshHost').value.trim(),
+        username: document.getElementById('sshUser').value.trim(),
+        authMethod: document.querySelector('input[name="auth"]:checked').value,
+        privateKeyPath: document.getElementById('sshKey').value.trim(),
+        password: document.getElementById('sshPass').value,
+        remotePath: document.getElementById('sshRemote').value.trim(),
+      };
+      try { await api.connectSsh(req); } catch(e){ topStatus.textContent = e.message; topStatus.className='status error'; }
+    });
+
+    // Expose for debugging
+    window._launcher = { detectMode, isGitUrl, isSshLike, parseSshInput };
+  });
 </script>
 </body>
 </html>
