@@ -1,0 +1,41 @@
+{
+  "nameShort": "Form",
+  "nameLong": "Form - Code Editor",
+  "applicationName": "form",
+  "dataFolderName": ".form",
+  "win32AppUserModelId": "ai.form.ide",
+  "win32MutexName": "form",
+  "licenseName": "MIT",
+  "licenseUrl": "https://github.com/microsoft/vscode/blob/main/LICENSE.txt",
+  "win32DirName": "Form",
+  "win32NameVersion": "Form",
+  "win32RegValueName": "Form",
+  "win32ToggleFileAssociation": true,
+  "extensionsGallery": {
+    "serviceUrl": "https://open-vsx.org/vscode/gallery",
+    "itemUrl": "https://open-vsx.org/vscode/item",
+    "resourceUrlTemplate": "https://open-vsx.org/vscode/unpkg/{publisher}/{name}/{version}/{path}",
+    "controlUrl": "",
+    "recommendationsUrl": "https://open-vsx.org/vscode/recommendations"
+  },
+  "linkProtectionTrustedDomains": [
+    "https://open-vsx.org"
+  ],
+  "extensionEnabledApiProposals": {
+    "form-agent-panel": ["chatProvider", "diffInformation"]
+  },
+  "builtInExtensions": [
+    {
+      "name": "form-agent-panel",
+      "version": "0.1.0",
+      "repo": "form/extensions/form-agent-panel",
+      "metadata": {
+        "id": "form.form-agent-panel",
+        "publisher": "form",
+        "name": "form-agent-panel",
+        "isApplicationExtension": true
+      }
+    }
+  ],
+  "codeServerVersion": "0.0.0-form"
+}

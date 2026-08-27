@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Form Workspace</title>
+<style>
+  *{box-sizing:border-box;margin:0} body{display:flex;height:100vh;font-family:Segoe UI,system-ui,sans-serif;background:#1e1e1e;color:#ccc}
+  #explorer{width:240px;background:#252526;border-right:1px solid #333;padding:10px;overflow:auto}
+  #explorer h3{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:8px}
+  #editor{flex:1;background:#1e1e1e;padding:16px;overflow:auto}
+  #agent{width:380px;background:#252526;border-left:1px solid #333;display:flex;flex-direction:column}
+  #agentHeader{padding:10px;border-bottom:1px solid #333;display:flex;gap:8px;align-items:center}
+  #agentHeader select, #agentHeader button{padding:6px;background:#1e1e1e;border:1px solid #333;color:#ccc;border-radius:4px}
+  #chat{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:10px}
+  .msg{padding:8px 10px;border-radius:6px;max-width:100%;white-space:pre-wrap;font-size:13px}
+  .msg.user{background:#0e639c;color:#fff;align-self:flex-end}
+  .msg.agent{background:#2d2d2d;border:1px solid #333}
+  .msg .meta{font-size:11px;color:#888;margin-bottom:4px}
+  #composer{display:flex;gap:8px;padding:10px;border-top:1px solid #333}
+  #composer textarea{flex:1;resize:none;padding:8px;background:#1e1e1e;border:1px solid #333;color:#ccc;border-radius:4px}
+  .diff{background:#1e1e1e;border:1px solid #007acc;border-radius:4px;padding:8px;margin-top:6px}
+  .diff .actions{margin-top:6px;display:flex;gap:6px}
+  .pill{font-size:11px;padding:2px 6px;background:#333;border-radius:10px}
+</style>
+</head>
+<body>
+  <div id="explorer">
+    <h3>Explorer</h3>
+    <div id="fileTree" style="font-size:13px;color:#999">(File tree — Code-OSS explorer in full build)<br><br>
+      <div id="workspaceLabel" style="color:#ccc;font-weight:600"></div>
+    </div>
+  </div>
+  <div id="editor">
+    <div style="color:#888;font-size:12px;margin-bottom:8px">Editor — Monaco (Code-OSS) in full build</div>
+    <div id="monacoStub" style="background:#252526;border:1px solid #333;border-radius:6px;padding:20px;font-family:Consolas,monospace;font-size:13px;min-height:300px">Open a file from the explorer to edit.<br><br>Agent diff previews appear here with Accept/Reject.</div>
+  </div>
+  <div id="agent">
+    <div id="agentHeader">
+      <select id="providerSelect" title="Active provider/model"></select>
+      <button id="settingsBtn" title="Provider settings">⚙</button>
+      <span id="modelBadge" class="pill">no model</span>
+    </div>
+    <div id="chat"></div>
+    <div id="composer">
+      <textarea id="prompt" rows="2" placeholder="Ask the agent to write, fix, or explain code..."></textarea>
+      <button id="sendBtn" style="padding:8px 14px;background:#007acc;color:#fff;border:0;border-radius:4px;cursor:pointer">Send</button>
+    </div>
+    <div id="settingsPanel" style="display:none;padding:10px;border-top:1px solid #333;max-height:50%;overflow:auto">
+      <h4 style="font-size:12px;margin-bottom:8px">BYOK Providers</h4>
+      <div id="providerList"></div>
+    </div>
+  </div>
+<script>
+  const folder = new URLSearchParams(location.search).get('folder') || '(no folder)';
+  document.getElementById('workspaceLabel').textContent = folder;
+
+  // Provider dropdown
+  async function loadProviders(){
+    const api = window.form;
+    if(!api) return;
+    const providers = await api.getProviders();
+    const sel = document.getElementById('providerSelect');
+    sel.innerHTML = '';
+    providers.forEach(p=>{
+      const o=document.createElement('option');
+      o.value=p.id; o.textContent = `${p.displayName}${p.model?' — '+p.model:''}${p.enabled?'':' (disabled)'}`;
+      sel.appendChild(o);
+    });
+    const active = await api.getActiveModel();
+    if(active && active.providerId) sel.value = active.providerId;
+    document.getElementById('modelBadge').textContent = active && active.model ? `${active.model} via ${active.providerId}` : 'no model';
+    // Settings list
+    const list=document.getElementById('providerList');
+    list.innerHTML = providers.map(p=>`
+      <div style="border:1px solid #333;padding:8px;border-radius:4px;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:600">${p.displayName} <span style="font-weight:400;color:#888">${p.id}</span></div>
+        ${p.id==='custom'||p.id==='local'?`<input data-id="${p.id}" data-field="baseUrl" placeholder="Base URL" value="${p.baseUrl||''}" style="width:100%;margin-top:6px;padding:6px;background:#1e1e1e;border:1px solid #333;color:#ccc;border-radius:4px" />`:''}
+        ${p.id!=='local'?`<input data-id="${p.id}" data-field="apiKey" placeholder="API key" type="password" style="width:100%;margin-top:6px;padding:6px;background:#1e1e1e;border:1px solid #333;color:#ccc;border-radius:4px" />`:''}
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button onclick="fetchModelsFor('${p.id}')" style="padding:4px 8px;background:#333;color:#ccc;border:0;border-radius:4px;cursor:pointer">Fetch models</button>
+          <button onclick="saveProvider('${p.id}')" style="padding:4px 8px;background:#007acc;color:#fff;border:0;border-radius:4px;cursor:pointer">Save</button>
+        </div>
+        <div id="models-${p.id}" style="font-size:12px;color:#888;margin-top:4px"></div>
+      </div>
+    `).join('');
+  }
+  async function fetchModelsFor(id){
+    const baseUrl = document.querySelector(`input[data-id="${id}"][data-field="baseUrl"]`)?.value || undefined;
+    const apiKey = document.querySelector(`input[data-id="${id}"][data-field="apiKey"]`)?.value || undefined;
+    const el=document.getElementById('models-'+id);
+    el.textContent='Fetching...';
+    try{
+      const models = await window.form.fetchModels(id, { baseUrl, apiKey });
+      el.innerHTML = models.length ? models.map(m=>`<span class="pill" style="cursor:pointer" onclick="pickModel('${id}','${m.id}')">${m.id}</span>`).join(' ') : 'No models returned — use manual name.';
+    }catch(e){ el.textContent = 'Fetch failed: '+e.message+' — use manual model name.'; }
+  }
+  async function saveProvider(id){
+    const baseUrl = document.querySelector(`input[data-id="${id}"][data-field="baseUrl"]`)?.value || undefined;
+    const plain = document.querySelector(`input[data-id="${id}"][data-field="apiKey"]`)?.value || undefined;
+    await window.form.saveProvider({ id, displayName: id, baseUrl, enabled: true, _plainApiKey: plain });
+    await loadProviders();
+  }
+  async function pickModel(providerId, model){
+    await window.form.setActiveModel(providerId, model);
+    await loadProviders();
+  }
+  document.getElementById('settingsBtn').onclick = ()=>{
+    const p=document.getElementById('settingsPanel');
+    p.style.display = p.style.display==='none'?'block':'none';
+    if(p.style.display==='block') loadProviders();
+  };
+  document.getElementById('providerSelect').onchange = async (e)=>{
+    const id=e.target.value;
+    // keep current model for that provider if already saved
+    const providers = await window.form.getProviders();
+    const prov = providers.find(x=>x.id===id);
+    if(prov && prov.model) await window.form.setActiveModel(id, prov.model);
+    loadProviders();
+  };
+
+  // Chat (talks to opencode serve via HTTP/SSE)
+  let serverUrl = null;
+  async function ensureServer(){
+    if(serverUrl) return serverUrl;
+    const res = await window.form.getServerUrl(folder);
+    if(res && res.error){ addMsg('agent', 'OpenCode server error: '+res.error+'\nIs `opencode` on PATH? Install from https://opencode.ai', 'system'); return null; }
+    serverUrl = typeof res==='string'?res:res.url||res;
+    return serverUrl;
+  }
+  function addMsg(role, text, meta){
+    const c=document.getElementById('chat');
+    const d=document.createElement('div');
+    d.className='msg '+(role==='user'?'user':'agent');
+    d.innerHTML = (meta?`<div class="meta">${meta}</div>`:'') + text.replace(/</g,'&lt;');
+    c.appendChild(d); c.scrollTop=c.scrollHeight;
+  }
+  document.getElementById('sendBtn').onclick = async ()=>{
+    const prompt=document.getElementById('prompt').value.trim();
+    if(!prompt) return;
+    addMsg('user', prompt);
+    document.getElementById('prompt').value='';
+    const url = await ensureServer();
+    if(!url){ addMsg('agent','No OpenCode server — configure provider first.', 'error'); return; }
+    const active = await window.form.getActiveModel();
+    const modelLabel = active && active.model ? `${active.model} via ${active.providerId}` : 'default model';
+    addMsg('agent','…waiting for '+modelLabel+'…', modelLabel);
+    try{
+      // OpenCode chat endpoint (SSE). Falls back to plain JSON if SSE not available.
+      const res = await fetch(`${url}/session`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prompt, model: active?.model }) });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const text = await res.text();
+      // Replace the "waiting" bubble
+      const last = document.getElementById('chat').lastElementChild;
+      if(last) last.innerHTML = `<div class="meta">${modelLabel}</div>${text.slice(0,4000).replace(/</g,'&lt;')}`;
+      // If response contains a diff, show accept/reject UI
+      if(text.includes('diff')||text.includes('patch')){
+        const diff=document.createElement('div');
+        diff.className='diff';
+        diff.innerHTML = `<div style="font-size:12px;color:#007acc">Diff preview</div><pre style="font-size:12px;white-space:pre-wrap">${text.slice(0,2000).replace(/</g,'&lt;')}</pre><div class="actions"><button style="background:#007acc;color:#fff;border:0;padding:4px 10px;border-radius:4px;cursor:pointer" onclick="this.closest('.diff').remove();addMsg('agent','Accepted.','system')">Accept</button><button style="background:#333;color:#ccc;border:0;padding:4px 10px;border-radius:4px;cursor:pointer" onclick="this.closest('.diff').remove();addMsg('agent','Rejected.','system')">Reject</button></div>`;
+        document.getElementById('chat').appendChild(diff);
+      }
+    }catch(e){
+      const last=document.getElementById('chat').lastElementChild;
+      if(last) last.innerHTML = `<div class="meta">error</div>Failed: ${e.message}. Check provider key, model, and that opencode serve is running.`;
+    }
+  };
+
+  if(window.form) loadProviders();
+</script>
+</body>
+</html>

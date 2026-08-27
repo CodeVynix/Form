@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Form — Open a Project</title>
+<style>
+  *{box-sizing:border-box} body{margin:0;font-family:Segoe UI,system-ui,sans-serif;background:#1e1e1e;color:#ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh}
+  h1{font-weight:300;letter-spacing:0.04em;margin:0 0 6px} .sub{color:#888;font-size:13px;margin-bottom:28px}
+  .cards{display:flex;gap:16px}
+  .card{width:200px;background:#252526;border:1px solid #333;border-radius:8px;padding:20px;cursor:pointer;transition:border-color .15s}
+  .card:hover{border-color:#007acc} .card h3{margin:0 0 6px;font-size:14px;color:#eee} .card p{margin:0;font-size:12px;color:#999;line-height:1.4}
+  .panel{margin-top:20px;width:640px;background:#252526;border:1px solid #333;border-radius:8px;padding:16px;display:none}
+  .panel.visible{display:block} input,select{width:100%;padding:8px;background:#1e1e1e;border:1px solid #333;color:#ccc;border-radius:4px;margin:6px 0}
+  button{padding:8px 14px;background:#007acc;color:#fff;border:0;border-radius:4px;cursor:pointer} button.secondary{background:#333}
+  .steps{display:flex;gap:8px;margin-bottom:12px} .step{flex:1;height:4px;background:#333;border-radius:2px} .step.active{background:#007acc}
+  #log{font-family:Consolas,monospace;font-size:12px;white-space:pre-wrap;max-height:120px;overflow:auto;background:#1e1e1e;padding:8px;border-radius:4px;margin-top:8px}
+</style>
+</head>
+<body>
+  <h1>Form</h1>
+  <div class="sub">Code-OSS based IDE · Open VSX · OpenCode agent</div>
+  <div class="cards">
+    <div class="card" id="btnOpen"><h3>Open Project</h3><p>Open a local folder as workspace</p></div>
+    <div class="card" id="btnClone"><h3>Clone Repo</h3><p>Clone from a git URL (https or ssh)</p></div>
+    <div class="card" id="btnSsh"><h3>Connect to SSH</h3><p>Open a remote directory over SSH</p></div>
+  </div>
+
+  <div class="panel" id="clonePanel">
+    <h3 style="margin:0 0 8px">Clone Repository</h3>
+    <input id="gitUrl" placeholder="https://github.com/user/repo.git  or  git@github.com:user/repo.git" />
+    <div style="margin-top:8px;display:flex;gap:8px"><button id="doClone">Clone</button><button class="secondary" onclick="hidePanels()">Cancel</button></div>
+    <div id="log"></div>
+  </div>
+
+  <div class="panel" id="sshPanel">
+    <h3 style="margin:0 0 8px">Connect to SSH</h3>
+    <div class="steps"><div class="step active" id="s1"></div><div class="step" id="s2"></div><div class="step" id="s3"></div></div>
+    <div id="sshStep1">
+      <input id="sshHost" placeholder="Host (e.g. 192.168.1.10 or my.server.com)" />
+      <input id="sshUser" placeholder="Username" />
+      <button onclick="sshNext(2)">Next</button>
+    </div>
+    <div id="sshStep2" style="display:none">
+      <label style="font-size:12px"><input type="radio" name="auth" value="privateKey" checked /> Private key (preferred)</label>
+      <label style="font-size:12px;margin-left:12px"><input type="radio" name="auth" value="password" /> Password</label>
+      <input id="sshKey" placeholder="Private key path (e.g. C:\Users\you\.ssh\id_rsa)" />
+      <input id="sshPass" placeholder="Password" type="password" style="display:none" />
+      <div style="margin-top:8px"><button onclick="sshNext(3)">Next</button> <button class="secondary" onclick="sshNext(1)">Back</button></div>
+    </div>
+    <div id="sshStep3" style="display:none">
+      <input id="sshRemote" placeholder="Remote path (e.g. /home/user/project)" />
+      <div style="margin-top:8px"><button id="doSsh">Connect</button> <button class="secondary" onclick="sshNext(2)">Back</button></div>
+      <p style="font-size:11px;color:#888;margin-top:8px">Password is never saved to disk. Opt-in OS keychain storage only.</p>
+    </div>
+  </div>
+
+<script>
+  const api = window.form;
+  document.getElementById('btnOpen').onclick = () => api.openProject();
+  document.getElementById('btnClone').onclick = () => show('clonePanel');
+  document.getElementById('btnSsh').onclick = () => show('sshPanel');
+  function show(id){ hidePanels(); document.getElementById(id).classList.add('visible'); }
+  function hidePanels(){ document.querySelectorAll('.panel').forEach(p=>p.classList.remove('visible')); }
+  document.getElementById('doClone').onclick = async () => {
+    const url = document.getElementById('gitUrl').value.trim();
+    if(!url) return;
+    document.getElementById('log').textContent = 'Starting clone...\n';
+    const res = await api.cloneRepo(url);
+    if(res && res.error) document.getElementById('log').textContent += 'Error: '+res.error;
+  };
+  if(api.onCloneProgress) api.onCloneProgress(p=>{ document.getElementById('log').textContent += p.text; });
+  document.querySelectorAll('input[name="auth"]').forEach(r=>r.onchange=()=>{
+    const isKey = document.querySelector('input[name="auth"]:checked').value==='privateKey';
+    document.getElementById('sshKey').style.display = isKey?'':'none';
+    document.getElementById('sshPass').style.display = isKey?'none':'';
+  });
+  function sshNext(n){
+    document.getElementById('sshStep1').style.display = n===1?'':'none';
+    document.getElementById('sshStep2').style.display = n===2?'':'none';
+    document.getElementById('sshStep3').style.display = n===3?'':'none';
+    document.getElementById('s1').classList.toggle('active', n>=1);
+    document.getElementById('s2').classList.toggle('active', n>=2);
+    document.getElementById('s3').classList.toggle('active', n>=3);
+  }
+  document.getElementById('doSsh').onclick = async ()=>{
+    const req = {
+      host: document.getElementById('sshHost').value.trim(),
+      username: document.getElementById('sshUser').value.trim(),
+      authMethod: document.querySelector('input[name="auth"]:checked').value,
+      privateKeyPath: document.getElementById('sshKey').value.trim(),
+      password: document.getElementById('sshPass').value,
+      remotePath: document.getElementById('sshRemote').value.trim(),
+    };
+    await api.connectSsh(req);
+  };
+</script>
+</body>
+</html>

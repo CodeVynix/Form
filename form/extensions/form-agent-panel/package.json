@@ -1,0 +1,28 @@
+{
+  "name": "form-agent-panel",
+  "displayName": "Form Agent Panel",
+  "description": "AI agent panel powered by OpenCode — chat, diff preview, BYOK provider/model picker. Built-in extension for Form (Code-OSS fork).",
+  "version": "0.1.0",
+  "publisher": "form",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        { "id": "formAgent", "title": "Form Agent", "icon": "$(comment-discussion)" }
+      ]
+    },
+    "views": {
+      "formAgent": [
+        { "type": "webview", "id": "form.agentPanel", "name": "Agent", "when": "true" }
+      ]
+    },
+    "commands": [
+      { "command": "form.agent.acceptDiff", "title": "Form: Accept Diff" },
+      { "command": "form.agent.rejectDiff", "title": "Form: Reject Diff" },
+      { "command": "form.agent.openSettings", "title": "Form: Agent Settings (BYOK)" }
+    ]
+  }
+}

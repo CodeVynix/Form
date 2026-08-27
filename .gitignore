@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Build output (TypeScript + Electron)
+out/
+dist/
+build/
+.vscode-test/
+*.vsix
+
+# Code-OSS upstream clone (fetched via scripts/fetch-vscode.js)
+.vscode-upstream/
+
+# OpenCode binary (fetched separately)
+opencode/
+opencode.exe
+
+# Electron / packaging
+*.exe
+*.msi
+*.AppImage
+*.dmg
+
+# Env / secrets — never commit keys or opencode configs with secrets
+.env
+.opencode/
+form-secure-keys.json
+form-providers.json
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log
+
+# OS cruft (Windows)
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS/Linux cruft (harmless to ignore now; we build Windows-only this pass)
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Coverage
+coverage/
+.nyc_output/

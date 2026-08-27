@@ -1,0 +1,2 @@
+/* agent.css — webview styles, inherits VS Code tokens where available */
+body { font-family: var(--vscode-font-family, 'Segoe UI', sans-serif); }

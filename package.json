@@ -1,0 +1,81 @@
+{
+  "name": "form",
+  "displayName": "Form",
+  "description": "Form — desktop IDE forked from Code-OSS with a first-run launcher and OpenCode-powered AI agent panel. Windows build for this pass.",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "author": "Form Contributors",
+  "type": "commonjs",
+  "main": "./out/main.js",
+  "engines": {
+    "node": ">=20.0.0",
+    "yarn": ">=1.22.0"
+  },
+  "packageManager": "yarn@1.22.22",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -watch -p tsconfig.json",
+    "lint": "eslint src --ext .ts",
+    "fetch:vscode": "node scripts/fetch-vscode.js",
+    "sync:product": "node scripts/sync-product.js",
+    "vscode:build": "yarn gulp vscode --target win32-x64 --build.target unbranded",
+    "electron:start": "electron ./out/main.js",
+    "dev": "yarn build && yarn electron:start",
+    "package:win": "electron-builder --win --x64",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "electron": "^30.0.0",
+    "electron-builder": "^24.9.0",
+    "typescript": "^5.4.0",
+    "eslint": "^8.57.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0"
+  },
+  "build": {
+    "appId": "ai.form.ide",
+    "productName": "Form",
+    "copyright": "Copyright © 2026 Form Contributors. MIT Licensed. Based on Code-OSS (MIT).",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "resources/icons/form.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    },
+    "files": [
+      "out/**/*",
+      "product.json",
+      "form/**/*",
+      "resources/**/*",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "form/extensions/form-agent-panel",
+        "to": "extensions/form-agent-panel"
+      }
+    ]
+  },
+  "opencode": {
+    "version": ">=0.1.0",
+    "serveArgs": ["serve"]
+  }
+}
