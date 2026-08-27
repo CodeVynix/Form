@@ -3,6 +3,7 @@
  * Shown before any project/window is open. Offers Open Project / Clone Repo / Connect to SSH.
  */
 import { BrowserWindow, dialog, ipcMain } from 'electron';
+import * as fs from 'fs';
 import * as path from 'path';
 import { IPC } from '../shared/ipc';
 import { cloneRepo } from './gitClone';
@@ -18,19 +19,26 @@ export function createLauncherWindow(): BrowserWindow {
     title: 'Form — Open a Project',
     backgroundColor: '#1e1e1e',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      // __dirname is out/launcher after build; preload is at out/preload.js
+      preload: path.join(__dirname, '..', 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
     },
-    // WIN32-SPECIFIC: icon path; harmless on other platforms.
-    icon: path.join(__dirname, '..', 'resources', 'icons', 'form.ico'),
+    // WIN32-SPECIFIC: icon path; harmless on other platforms. From out/launcher -> ../../resources
+    icon: path.join(__dirname, '..', '..', 'resources', 'icons', 'form.ico'),
   });
 
   // Assets are mirrored by scripts/copy-assets.js: src/**/*.html -> out/**/*.html
-  // In dev, __dirname is out/ ; in packaged app, same. Try out/launcher/launcher.html first, fallback to src/ for bare tsc without copy.
-  const outHtml = path.join(__dirname, 'launcher', 'launcher.html');
-  const srcHtml = path.join(__dirname, '..', 'src', 'launcher', 'launcher.html');
-  const htmlToLoad = require('fs').existsSync(outHtml) ? outHtml : srcHtml;
+  // __dirname is out/launcher, so out asset is out/launcher/launcher.html
+  const outHtml = path.join(__dirname, 'launcher.html');
+  const srcHtml = path.join(__dirname, '..', '..', 'src', 'launcher', 'launcher.html');
+  const htmlToLoad = fs.existsSync(outHtml) ? outHtml : srcHtml;
+  // Log resolved path for debugging ERR_FILE_NOT_FOUND (visible with --enable-logging)
+  if (!fs.existsSync(htmlToLoad)) {
+    console.error(`[launcher] HTML not found: tried ${outHtml} and ${srcHtml}`);
+  } else {
+    console.log(`[launcher] loading ${htmlToLoad}`);
+  }
   launcherWindow.loadFile(htmlToLoad);
   launcherWindow.on('closed', () => { launcherWindow = undefined; });
   return launcherWindow;
