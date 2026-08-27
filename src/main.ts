@@ -5,7 +5,7 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { createLauncherWindow, registerLauncherIpc } from './launcher/launcher';
+import { createLauncherWindow, registerLauncherIpc, addRecentProject } from './launcher/launcher';
 import { ensureOpencodeServer, getOpencodeHandle, killAllOpencodeServers } from './agent/opencodeManager';
 import { loadProviders, saveProviders } from './agent/providerConfig';
 import { fetchModels } from './agent/modelFetcher';
@@ -54,6 +54,7 @@ function createWorkspaceWindow(folder: string): BrowserWindow {
 }
 
 function openWorkspace(folder: string): void {
+  try { addRecentProject(folder); } catch {}
   // Close launcher if open, open workspace window.
   BrowserWindow.getAllWindows().forEach((w) => {
     if (w.title.includes('Open a Project')) w.close();

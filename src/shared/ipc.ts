@@ -7,6 +7,9 @@ export const IPC = {
   launcherCloneProgress: 'launcher:cloneProgress',
   launcherConnectSsh: 'launcher:connectSsh',
   launcherOpenWorkspace: 'launcher:openWorkspace',
+  launcherGetRecent: 'launcher:getRecent',
+  launcherAddRecent: 'launcher:addRecent',
+  launcherOpenPath: 'launcher:openPath',
 
   // Agent / OpenCode
   agentGetServerUrl: 'agent:getServerUrl',

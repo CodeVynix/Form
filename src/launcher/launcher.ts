@@ -2,7 +2,7 @@
  * launcher.ts — First-run project launcher window controller.
  * Shown before any project/window is open. Offers Open Project / Clone Repo / Connect to SSH.
  */
-import { BrowserWindow, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { IPC } from '../shared/ipc';
@@ -10,6 +10,26 @@ import { cloneRepo } from './gitClone';
 import { buildSshUri } from './sshConnect';
 
 let launcherWindow: BrowserWindow | undefined;
+
+const RECENT_FILE = 'form-recent.json';
+const MAX_RECENT = 12;
+
+export interface RecentEntry { name: string; path: string; lastOpened: number; }
+
+function recentPath(): string { return path.join(app.getPath('userData'), RECENT_FILE); }
+
+export function getRecentProjects(): RecentEntry[] {
+  try { return JSON.parse(fs.readFileSync(recentPath(), 'utf8')) as RecentEntry[]; } catch { return []; }
+}
+export function addRecentProject(p: string): void {
+  const abs = path.resolve(p);
+  if (!fs.existsSync(abs) && !p.startsWith('ssh://') && !p.startsWith('vscode-remote://')) return;
+  const name = path.basename(abs);
+  let list = getRecentProjects().filter(r => r.path !== abs);
+  list.unshift({ name, path: abs, lastOpened: Date.now() });
+  list = list.slice(0, MAX_RECENT);
+  try { fs.mkdirSync(path.dirname(recentPath()), { recursive: true }); fs.writeFileSync(recentPath(), JSON.stringify(list, null, 2), 'utf8'); } catch {}
+}
 
 export function createLauncherWindow(): BrowserWindow {
   launcherWindow = new BrowserWindow({
@@ -23,6 +43,7 @@ export function createLauncherWindow(): BrowserWindow {
       preload: path.join(__dirname, '..', 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: false,
     },
     // WIN32-SPECIFIC: icon path; harmless on other platforms. From out/launcher -> ../../resources
     icon: path.join(__dirname, '..', '..', 'resources', 'icons', 'form.ico'),
@@ -48,8 +69,26 @@ export function registerLauncherIpc(openWorkspace: (folder: string) => void): vo
   ipcMain.handle(IPC.launcherOpenProject, async () => {
     const res = await dialog.showOpenDialog({ properties: ['openDirectory'] });
     if (res.canceled || !res.filePaths[0]) return undefined;
-    openWorkspace(res.filePaths[0]);
-    return res.filePaths[0];
+    const chosen = res.filePaths[0];
+    addRecentProject(chosen);
+    openWorkspace(chosen);
+    return chosen;
+  });
+
+  ipcMain.handle(IPC.launcherGetRecent, async () => getRecentProjects());
+  ipcMain.handle(IPC.launcherAddRecent, async (_e, entry: { name: string; path: string }) => {
+    if (entry?.path) addRecentProject(entry.path);
+    return getRecentProjects();
+  });
+  ipcMain.handle(IPC.launcherOpenPath, async (_e, p: string) => {
+    if (!p) return { ok: false, error: 'No path' };
+    // verify existence for local paths
+    if (!p.startsWith('ssh://') && !p.startsWith('vscode-remote://') && !fs.existsSync(p)) {
+      return { ok: false, error: `Path not found: ${p}` };
+    }
+    addRecentProject(p);
+    openWorkspace(p);
+    return { ok: true };
   });
 
   ipcMain.handle(IPC.launcherCloneRepo, async (_evt, gitUrl: string) => {
@@ -61,6 +100,7 @@ export function registerLauncherIpc(openWorkspace: (folder: string) => void): vo
     const onProgress = (p: { phase: string; text: string }) => win?.webContents.send(IPC.launcherCloneProgress, p);
     try {
       const clonedPath = await cloneRepo(gitUrl, destFolder, onProgress as any);
+      addRecentProject(clonedPath);
       openWorkspace(clonedPath);
       return { ok: true, path: clonedPath };
     } catch (e) {
@@ -70,6 +110,7 @@ export function registerLauncherIpc(openWorkspace: (folder: string) => void): vo
 
   ipcMain.handle(IPC.launcherConnectSsh, async (_evt, req: any) => {
     const uri = buildSshUri(req);
+    addRecentProject(uri);
     // Delegates to open-remote-ssh extension; for now open as workspace URI.
     // The workbench window will handle `vscode-remote://ssh-remote+...` URIs.
     openWorkspace(uri);

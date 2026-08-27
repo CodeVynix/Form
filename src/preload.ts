@@ -12,6 +12,9 @@ contextBridge.exposeInMainWorld('form', {
   cloneRepo: (gitUrl: string) => ipcRenderer.invoke(IPC.launcherCloneRepo, gitUrl),
   onCloneProgress: (cb: (p: any) => void) => ipcRenderer.on(IPC.launcherCloneProgress, (_e, p) => cb(p)),
   connectSsh: (req: SshConnectionRequest) => ipcRenderer.invoke(IPC.launcherConnectSsh, req),
+  getRecent: () => ipcRenderer.invoke(IPC.launcherGetRecent),
+  addRecent: (entry: { name: string; path: string }) => ipcRenderer.invoke(IPC.launcherAddRecent, entry),
+  openPath: (p: string) => ipcRenderer.invoke(IPC.launcherOpenPath, p),
 
   // Agent
   getServerUrl: (workspaceFolder: string) => ipcRenderer.invoke(IPC.agentGetServerUrl, workspaceFolder),
